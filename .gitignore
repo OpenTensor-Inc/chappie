@@ -11,3 +11,4 @@ chappie_training.log
 cache/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/cache-7b31ce7e45908797.arrow
 .gitignore
 cache/glue/cola/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/cache-8f71f3a603044f97.arrow
+./__pycache__/
