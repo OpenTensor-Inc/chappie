@@ -1,0 +1,76 @@
+# Chappie v1 default configuration (CLEFPE field language model)
+grid:
+  n1: 16
+  n2: 16
+  n3: 16
+  length: 1.0
+  boundary: periodic
+  dtype: float32
+solver:
+  type: imex
+  dt: 0.01
+  n_steps_per_token: 8
+  cfl_safety: 0.5
+  max_halvings: 6
+  clip_phi: 1.0
+  energy_normalize: false
+clefpe:
+  c: 1.2
+  D: 0.05
+  gamma: 0.8
+  kappa: 0.5
+  V0: -65.0
+  lam_R: 0.1
+  a: -0.5
+  b: 0.25
+memory:
+  rho: [0.02, 0.005]
+  mu: [0.3, 0.02]
+  eta: [0.4, 0.2]
+  chi: [0.6, 0.4]
+hh:
+  C_m: 1.0
+  xi: 0.05
+  g_Na: 120.0
+  g_K: 36.0
+  g_L: 0.3
+  E_Na: 50.0
+  E_K: -77.0
+  E_L: -54.4
+  rest: -65.0
+encoding:
+  basis: gaussian
+  sigma: 0.4
+  amp: 1.0
+  pulse_width: 0.5
+  init_mode: sum_normalized
+  context_weights: overlap
+decoding:
+  tau: 0.5
+  read_modalities: [phi]
+  bias: true
+  n_modes: 48
+training:
+  vocab_size: 96
+  seq_len: 32
+  batch_size: 1
+  steps: 120
+  lr: 0.002
+  n_unroll: 4
+  teacher_forcing: true
+  force_gain: 0.5
+  param_every: 2
+  val_every: 20
+  checkpoint_every: 50
+  ckpt_dir: artifacts/ckpt
+  seed: 0
+data:
+  source: synthetic
+  tokenizer: char
+  text_path: data/tiny_corpus.txt
+  curriculum: true
+  max_level: 4
+sampling:
+  temperature: 0.8
+  top_k: 0
+  top_p: 1.0
