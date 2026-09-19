@@ -199,10 +199,10 @@ class ChappieStreamingDataset(IterableDataset):
         specs.extend([
             {"name": "bigcode/the-stack-v2",     "config": None,
              "split": "train", "weight": 0.20},
-            {"name": "CohereForAI/aya_collection","config": None,
+            {"name": "CohereLabs/aya_dataset", "config": None,
              "split": "train", "weight": 0.15},
-            {"name": "manu/project_gutenberg",    "config": "en",
-             "split": "train", "weight": 0.10},
+            {"name": "manu/project_gutenberg",    "config": None,
+             "split": "en", "weight": 0.10},
             {"name": "gfissore/arxiv-abstracts-2021", "config": None,
              "split": "train", "weight": 0.10},
         ])
