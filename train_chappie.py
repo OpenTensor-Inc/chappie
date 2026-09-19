@@ -86,7 +86,10 @@ class ChappieTrainer:
             model.rss.parameters(), lr=1e-4
         )
 
-        self.loss_weights = nn.Parameter(torch.zeros(3))
+        # Learnable positive objective weights.
+        # The previous zero initialization made the complete weighted
+        # objective exactly zero at step 0, preventing model learning.
+        self.loss_weights = nn.Parameter(torch.ones(3))
         self.loss_optimizer = torch.optim.Adam([self.loss_weights], lr=1e-3)
 
         self.phase_scheduler = PhaseScheduler(
@@ -142,19 +145,41 @@ class ChappieTrainer:
 
         loss_values = list(loss_dict.values())
         if len(loss_values) >= 2:
-            weighted = self.loss_weights[0] * loss_values[0]
-            weighted = weighted + self.loss_weights[1] * loss_values[1]
+            weighted = (
+                self.loss_weights[0] * loss_values[0]
+                + self.loss_weights[1] * loss_values[1]
+            )
             if len(loss_values) > 2:
                 weighted = weighted + self.loss_weights[2] * loss_values[2]
         else:
             weighted = loss_values[0]
 
         self.optimizer.zero_grad(set_to_none=True)
+        self.loss_optimizer.zero_grad(set_to_none=True)
+        self.analyzer_optimizer.zero_grad(set_to_none=True)
+        self.rss_optimizer.zero_grad(set_to_none=True)
+
         weighted.backward()
+
         grad_norm = torch.nn.utils.clip_grad_norm_(
             self.model.parameters(), max_norm=1.0
         ).item()
+
         self.optimizer.step()
+
+        # Keep the objective weights trainable. The loss gradients are
+        # computed by the same backward pass, so this optimizer updates
+        # the weights based on the current loss components.
+        if len(loss_values) >= 2:
+            self.loss_optimizer.step()
+
+        # These optimizers operate on parameter subsets that are normally
+        # frozen in early phases. Step them only when their corresponding
+        # modules are active, avoiding unnecessary optimizer updates.
+        if phase >= 1:
+            self.analyzer_optimizer.step()
+        if phase >= 4:
+            self.rss_optimizer.step()
 
         self.prev_losses = {k: v.item() for k, v in loss_dict.items()}
         self.prev_grad_norm = grad_norm
@@ -164,6 +189,9 @@ class ChappieTrainer:
             "step": self.step,
             "phase": phase,
             "grad_norm": grad_norm,
+            "loss_weight/lm": self.loss_weights[0].item(),
+            "loss_weight/diffusion": self.loss_weights[1].item(),
+            "loss_weight/gan": self.loss_weights[2].item(),
             **{f"loss/{k}": v.item() for k, v in loss_dict.items()},
         }
 
@@ -245,7 +273,7 @@ def main():
     loader = DataLoader(
         dataset,
         batch_size=args.batch_size,
-        num_workers=0,           # streaming dataset handles its own threading
+        num_workers=0,
         pin_memory=(device.type == "cuda"),
     )
 
@@ -267,7 +295,6 @@ def main():
     t0 = time.time()
 
     for step in range(args.steps):
-        # Fetch batch (blocking here is fine — prefetcher keeps it fast)
         try:
             batch = next(data_iter)
         except StopIteration:
@@ -276,7 +303,6 @@ def main():
 
         metrics = trainer.train_step(batch)
 
-        # Cache cleanup (conservative, non-destructive)
         if step > 0 and step % args.cache_cleanup_every == 0:
             cleanup_cache(
                 step,
@@ -284,7 +310,6 @@ def main():
                 max_size_gb=args.max_cache_gb,
             )
 
-        # Logging
         if step % args.log_every == 0:
             elapsed = time.time() - t0
             steps_per_sec = (step + 1) / max(elapsed, 1e-6)
@@ -298,10 +323,15 @@ def main():
                 msg += f" diff={metrics['loss/diffusion']:.4f}"
             if "loss/gan" in metrics:
                 msg += f" gan={metrics['loss/gan']:.4f}"
+            msg += (
+                f" | weights="
+                f"{metrics['loss_weight/lm']:.3f},"
+                f"{metrics['loss_weight/diffusion']:.3f},"
+                f"{metrics['loss_weight/gan']:.3f}"
+            )
             msg += f" | {elapsed:.1f}s | {steps_per_sec:.2f} steps/s"
             logger.info(msg)
 
-        # Checkpointing
         if step > 0 and step % args.save_every == 0:
             ckpt_path = out_dir / f"chappie_step_{step}.pt"
             torch.save(
@@ -309,6 +339,8 @@ def main():
                     "step": step,
                     "model": model.state_dict(),
                     "optimizer": trainer.optimizer.state_dict(),
+                    "loss_optimizer": trainer.loss_optimizer.state_dict(),
+                    "loss_weights": trainer.loss_weights.detach().cpu(),
                     "config": cfg,
                 },
                 ckpt_path,
@@ -316,7 +348,6 @@ def main():
             logger.info(f"Saved checkpoint: {ckpt_path}")
             report_cache_size()
 
-    # ---- Final cleanup ----
     full_cleanup()
     logger.info("Training complete. Cache cleared.")
 
