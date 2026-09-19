@@ -217,7 +217,7 @@ class ChappieStreamingDataset(IterableDataset):
 
         # 2-5. Other sources
         specs.extend([
-            {"name": "bigcode/the-stack-v2",     "config": None,
+            {"name": "bigcode/the-stack-smol",  "config": None,
              "split": "train", "weight": 0.20},
             {"name": "CohereLabs/aya_dataset", "config": None,
              "split": "train", "weight": 0.15},
@@ -242,7 +242,7 @@ class ChappieStreamingDataset(IterableDataset):
 
         # Text fields to look for (in priority order)
         self.text_fields = [
-            "text", "content", "abstract", "inputs", "code", "raw_content"
+            "text", "content", "abstract", "code", "raw_content"
         ]
 
         # Pre-build the interleaved iterator once
@@ -259,11 +259,34 @@ class ChappieStreamingDataset(IterableDataset):
         ).__iter__()
 
     def _extract_text(self, sample: dict) -> Optional[str]:
-        """Extract text from a sample using known field names."""
+        """Extract usable training text from heterogeneous dataset schemas."""
         for field in self.text_fields:
-            if field in sample and isinstance(sample[field], str):
-                if len(sample[field]) >= 50:
-                    return sample[field]
+            value = sample.get(field)
+            if isinstance(value, str) and len(value.strip()) >= 50:
+                return value.strip()
+
+        # Aya-style instruction records: preserve both prompt and answer.
+        inputs = sample.get("inputs")
+        targets = sample.get("targets")
+        if isinstance(inputs, str) and isinstance(targets, str):
+            text = inputs.strip() + "\n\n" + targets.strip()
+            if len(text) >= 50:
+                return text
+
+        # Stack-v2 style records may contain a list of file objects.
+        files = sample.get("files")
+        if isinstance(files, list):
+            parts = []
+            for item in files:
+                if isinstance(item, dict):
+                    content = item.get("content")
+                    if isinstance(content, str) and content.strip():
+                        parts.append(content.strip())
+            if parts:
+                text = "\n\n".join(parts)
+                if len(text) >= 50:
+                    return text
+
         return None
 
     # ----------------------------------------------------------------
