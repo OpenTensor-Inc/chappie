@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional, Tuple, Dict, Callable
+from typing import Any, Optional, Tuple, Dict, Callable
 
 import torch
 import torch.nn as nn
@@ -45,9 +45,20 @@ from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
     checkpoint_wrapper as ptd_checkpoint_wrapper,
 )
 
-# TorchTitan internal
-from torchtitan.distributed import ParallelDims
-from torchtitan.config.job_config import JobConfig
+# TorchTitan integration is optional.
+#
+# The core Chappie model and the single-GPU trainer do not require TorchTitan.
+# TorchTitan's internal API changes between releases, so importing its
+# internal configuration classes unconditionally would prevent Chappie from
+# loading on Kaggle environments with a different TorchTitan version.
+try:
+    from torchtitan.distributed import ParallelDims
+    from torchtitan.config.job_config import JobConfig
+    TORCHTITAN_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    ParallelDims = Any
+    JobConfig = Any
+    TORCHTITAN_AVAILABLE = False
 
 
 # ============================================================
@@ -604,6 +615,14 @@ def parallelize_chappie(
 
     Order matters: TP -> AC -> compile -> FSDP
     """
+    if not TORCHTITAN_AVAILABLE:
+        raise RuntimeError(
+            "TorchTitan integration is not available. "
+            "ChappieModel can still be used for single-GPU/CPU training. "
+            "Install a compatible TorchTitan version to enable distributed "
+            "parallelization."
+        )
+
     cfg: ChappieConfig = model.cfg
 
     # 1. Tensor Parallelism
@@ -636,6 +655,13 @@ def parallelize_chappie(
 
 def register_chappie_spec() -> None:
     """Register Chappie model spec with TorchTitan."""
+    if not TORCHTITAN_AVAILABLE:
+        raise RuntimeError(
+            "TorchTitan integration is not available. "
+            "Install a compatible TorchTitan version before registering "
+            "Chappie with TorchTitan."
+        )
+
     from torchtitan.protocols.model_spec import ModelSpec, register_model_spec
 
     model_spec = ModelSpec(
