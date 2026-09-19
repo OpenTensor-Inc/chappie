@@ -149,9 +149,11 @@ class ChappieStreamingDataset(IterableDataset):
         - arXiv (scientific)            : 10%
     """
 
+    # FineWeb-2 does not contain the main English corpus.
+    # English is provided by the original FineWeb dataset.
     LANG_TO_FINEWEB2 = {
-        "en": "eng_Latn", "fa": "fas_Arab", "ar": "ara_Arab",
-        "zh": "cmn_Hani", "de": "deu_Latn", "fr": "fra_Latn",
+        "fa": "fas_Arab", "ar": "arb_Arab",
+        "zh": "zho_Hans", "de": "deu_Latn", "fr": "fra_Latn",
         "es": "spa_Latn", "ja": "jpn_Jpan", "ru": "rus_Cyrl",
         "pt": "por_Latn", "ko": "kor_Hang", "it": "ita_Latn",
         "tr": "tur_Latn", "pl": "pol_Latn", "nl": "nld_Latn",
@@ -181,18 +183,36 @@ class ChappieStreamingDataset(IterableDataset):
         # Build specs for parallel loading -----------------------------
         specs = []
 
-        # 1. FineWeb-2 (multilingual web) — 45% weight
-        n_langs = max(len(languages), 1)
+        # 1. Web corpora — 45% weight
+        # FineWeb-2 explicitly points English users to the original FineWeb.
+        # Use FineWeb for English and FineWeb-2 for non-English languages.
+        web_sources = []
+
+        if "en" in languages:
+            web_sources.append({
+                "name": "HuggingFaceFW/fineweb",
+                "config": "sample-10BT",
+                "split": "train",
+            })
+
         for lang in languages:
+            if lang == "en":
+                continue
             config = self.LANG_TO_FINEWEB2.get(lang)
             if config is None:
                 logger.warning(f"No FineWeb-2 config for language: {lang}")
                 continue
-            specs.append({
+            web_sources.append({
                 "name": "HuggingFaceFW/fineweb-2",
                 "config": config,
                 "split": "train",
-                "weight": 0.45 / n_langs,
+            })
+
+        web_weight = 0.45 / max(len(web_sources), 1)
+        for source in web_sources:
+            specs.append({
+                **source,
+                "weight": web_weight,
             })
 
         # 2-5. Other sources
