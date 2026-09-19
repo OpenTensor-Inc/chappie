@@ -183,11 +183,25 @@ class ChappieStreamingDataset(IterableDataset):
         # Build specs for parallel loading -----------------------------
         specs = []
 
-        # 1. Web corpora — 45% weight
-        # FineWeb-2 explicitly points English users to the original FineWeb.
-        # Use FineWeb for English and FineWeb-2 for non-English languages.
-        web_sources = []
+        # Chappie pretraining mixture.
+        # This is a heterogeneous corpus for a general LLM + MoE:
+        # general web, educational text, code, mathematics, synthetic
+        # pedagogy/narrative, multilingual instruction, books, and science.
+        #
+        # Target sampling weights:
+        # 30% general multilingual web
+        # 15% educational web
+        # 15% code
+        # 10% mathematics
+        # 10% synthetic educational/narrative
+        # 10% multilingual instruction
+        #  5% books
+        #  5% scientific abstracts
 
+        specs = []
+
+        # 1. General multilingual web — 30%
+        web_sources = []
         if "en" in languages:
             web_sources.append({
                 "name": "HuggingFaceFW/fineweb",
@@ -208,24 +222,65 @@ class ChappieStreamingDataset(IterableDataset):
                 "split": "train",
             })
 
-        web_weight = 0.45 / max(len(web_sources), 1)
+        web_weight = 0.30 / max(len(web_sources), 1)
         for source in web_sources:
-            specs.append({
-                **source,
-                "weight": web_weight,
-            })
+            specs.append({**source, "weight": web_weight})
 
-        # 2-5. Other sources
-        specs.extend([
-            {"name": "bigcode/the-stack-smol",  "config": None,
-             "split": "train", "weight": 0.20},
-            {"name": "CohereLabs/aya_dataset", "config": None,
-             "split": "train", "weight": 0.15},
-            {"name": "manu/project_gutenberg",    "config": None,
-             "split": "en", "weight": 0.10},
-            {"name": "gfissore/arxiv-abstracts-2021", "config": None,
-             "split": "train", "weight": 0.10},
-        ])
+        # 2. Educational web — 15%
+        specs.append({
+            "name": "HuggingFaceTB/smollm-corpus",
+            "config": "fineweb-edu-dedup",
+            "split": "train",
+            "weight": 0.15,
+        })
+
+        # 3. Code — 15%
+        specs.append({
+            "name": "bigcode/the-stack-smol",
+            "config": None,
+            "split": "train",
+            "weight": 0.15,
+        })
+
+        # 4. Mathematics — 10%
+        specs.append({
+            "name": "HuggingFaceTB/finemath",
+            "config": "finemath-4plus",
+            "split": "train",
+            "weight": 0.10,
+        })
+
+        # 5. Synthetic educational / narrative — 10%
+        specs.append({
+            "name": "HuggingFaceTB/smollm-corpus",
+            "config": "cosmopedia-v2",
+            "split": "train",
+            "weight": 0.10,
+        })
+
+        # 6. Multilingual instruction — 10%
+        specs.append({
+            "name": "CohereLabs/aya_dataset",
+            "config": None,
+            "split": "train",
+            "weight": 0.10,
+        })
+
+        # 7. Books / long-form prose — 5%
+        specs.append({
+            "name": "manu/project_gutenberg",
+            "config": None,
+            "split": "en",
+            "weight": 0.05,
+        })
+
+        # 8. Scientific text — 5%
+        specs.append({
+            "name": "gfissore/arxiv-abstracts-2021",
+            "config": None,
+            "split": "train",
+            "weight": 0.05,
+        })
 
         logger.info(f"Loading {len(specs)} datasets in parallel...")
         datasets_list, weights = _load_parallel(
