@@ -128,7 +128,7 @@ impl DyadicCoordinate {
     }
 
     pub fn cell_width(self) -> f64 {
-        2.0_f64.powi(-(self.depth as i32))
+        2.0_f64.powi(0i32 - self.depth as i32)
     }
 
     pub fn midpoint_error_bound(self) -> f64 {
