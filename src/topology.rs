@@ -158,9 +158,7 @@ impl fmt::Display for TopologyError {
                 write!(
                     f,
                     "triangle ({}, {}, {}) already exists",
-                    triangle.vertices[0].0,
-                    triangle.vertices[1].0,
-                    triangle.vertices[2].0
+                    triangle.vertices[0].0, triangle.vertices[1].0, triangle.vertices[2].0
                 )
             }
         }
@@ -254,10 +252,7 @@ mod tests {
 
         let result = topology.add_triangle(v2, v0, v1);
 
-        assert!(matches!(
-            result,
-            Err(TopologyError::DuplicateTriangle(_))
-        ));
+        assert!(matches!(result, Err(TopologyError::DuplicateTriangle(_))));
     }
 
     #[test]

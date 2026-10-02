@@ -95,11 +95,7 @@ pub struct Chart {
 }
 
 impl Chart {
-    pub fn new<F>(
-        domain: Domain,
-        embedding_dimension: usize,
-        map: F,
-    ) -> Result<Self, ChartError>
+    pub fn new<F>(domain: Domain, embedding_dimension: usize, map: F) -> Result<Self, ChartError>
     where
         F: Fn(&[f64]) -> Point + Send + Sync + 'static,
     {
@@ -167,10 +163,7 @@ impl fmt::Display for ChartError {
                 write!(f, "parameter lies outside chart domain")
             }
             Self::InvalidMapDimension { expected, actual } => {
-                write!(
-                    f,
-                    "chart returned dimension {actual}, expected {expected}"
-                )
+                write!(f, "chart returned dimension {actual}, expected {expected}")
             }
             Self::NonFiniteOutput => {
                 write!(f, "chart returned a non-finite coordinate")
@@ -187,11 +180,7 @@ mod tests {
 
     #[test]
     fn domain_contains_points() {
-        let domain = Domain::new(vec![
-            (-1.0, 1.0),
-            (0.0, 2.0),
-        ])
-        .unwrap();
+        let domain = Domain::new(vec![(-1.0, 1.0), (0.0, 2.0)]).unwrap();
 
         assert!(domain.contains(&[0.0, 1.0]));
         assert!(domain.contains(&[-1.0, 0.0]));
@@ -202,20 +191,9 @@ mod tests {
 
     #[test]
     fn chart_evaluates_function() {
-        let domain = Domain::new(vec![
-            (-1.0, 1.0),
-            (-1.0, 1.0),
-        ])
-        .unwrap();
+        let domain = Domain::new(vec![(-1.0, 1.0), (-1.0, 1.0)]).unwrap();
 
-        let chart = Chart::new(domain, 3, |p| {
-            vec![
-                p[0],
-                p[1],
-                p[0] * p[1],
-            ]
-        })
-        .unwrap();
+        let chart = Chart::new(domain, 3, |p| vec![p[0], p[1], p[0] * p[1]]).unwrap();
 
         let result = chart.evaluate(&[2.0, 3.0]);
 
@@ -230,10 +208,7 @@ mod tests {
     fn rejects_wrong_output_dimension() {
         let domain = Domain::new(vec![(-1.0, 1.0)]).unwrap();
 
-        let chart = Chart::new(domain, 3, |_p| {
-            vec![1.0, 2.0]
-        })
-        .unwrap();
+        let chart = Chart::new(domain, 3, |_p| vec![1.0, 2.0]).unwrap();
 
         let result = chart.evaluate(&[0.0]);
 
@@ -250,10 +225,7 @@ mod tests {
     fn rejects_non_finite_output() {
         let domain = Domain::new(vec![(-1.0, 1.0)]).unwrap();
 
-        let chart = Chart::new(domain, 1, |_p| {
-            vec![f64::NAN]
-        })
-        .unwrap();
+        let chart = Chart::new(domain, 1, |_p| vec![f64::NAN]).unwrap();
 
         let result = chart.evaluate(&[0.0]);
 
