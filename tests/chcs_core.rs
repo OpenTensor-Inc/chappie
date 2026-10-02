@@ -23,7 +23,7 @@ fn dyadic_coordinate_has_explicit_error_bound() {
     let x = 0.371829;
     let coordinate = DyadicCoordinate::encode(x, 20).unwrap();
     assert!((coordinate.midpoint() - x).abs() <= coordinate.midpoint_error_bound());
-    assert!(coordinate.midpoint_error_bound() <= 2f64.powi(-21));
+    assert!(coordinate.midpoint_error_bound() <= 2f64.powi(0i32 - 21));
 }
 
 #[test]
@@ -57,6 +57,6 @@ fn duplicate_coefficients_are_merged() {
     assert_eq!(object.base[0].value, 1.0);
 
     object.add_detail(1, 3, 0.25);
-    object.add_detail(1, 3, -0.25);
+    object.add_detail(1, 3, 0.0 - 0.25);
     assert!(object.details.is_empty());
 }
