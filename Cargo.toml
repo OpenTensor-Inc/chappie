@@ -1,0 +1,14 @@
+[package]
+name = "chappie"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+description = "CHCS continuous hyper-compressed structure core"
+repository = "https://github.com/OpenTensor-Inc/chappie"
+
+[lib]
+name = "chcs"
+path = "src/lib.rs"
+
+[features]
+default = []
