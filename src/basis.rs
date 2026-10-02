@@ -13,13 +13,21 @@ impl CubicBSpline {
         if !x.is_finite() || !(Self::SUPPORT_START..=Self::SUPPORT_END).contains(&x) {
             return 0.0;
         }
+
         let mut sum = 0.0;
-        for (shift, coefficient) in [(0.0, 1.0), (1.0, 0.0 - 4.0), (2.0, 6.0), (3.0, 0.0 - 4.0), (4.0, 1.0)] {
+        for (shift, coefficient) in [
+            (0.0, 1.0),
+            (1.0, 0.0 - 4.0),
+            (2.0, 6.0),
+            (3.0, 0.0 - 4.0),
+            (4.0, 1.0),
+        ] {
             let t = x - shift;
             if t > 0.0 {
                 sum += coefficient * t * t * t;
             }
         }
+
         sum / 6.0
     }
 
@@ -39,8 +47,17 @@ impl CubicBSplineWavelet {
     pub const SUPPORT_END: f64 = 7.0;
 
     const MASK: [f64; 11] = [
-        1.0, 0.0 - 124.0, 1677.0, 0.0 - 7904.0, 18482.0, 0.0 - 24264.0,
-        18482.0, 0.0 - 7904.0, 1677.0, 0.0 - 124.0, 1.0,
+        1.0,
+        0.0 - 124.0,
+        1677.0,
+        0.0 - 7904.0,
+        18482.0,
+        0.0 - 24264.0,
+        18482.0,
+        0.0 - 7904.0,
+        1677.0,
+        0.0 - 124.0,
+        1.0,
     ];
 
     #[inline]
@@ -48,10 +65,12 @@ impl CubicBSplineWavelet {
         if !x.is_finite() || !(Self::SUPPORT_START..=Self::SUPPORT_END).contains(&x) {
             return 0.0;
         }
+
         let mut sum = 0.0;
         for (shift, coefficient) in Self::MASK.iter().copied().enumerate() {
             sum += coefficient * CubicBSpline::value(2.0 * x - shift as f64);
         }
+
         sum / 40320.0
     }
 
@@ -81,7 +100,9 @@ mod tests {
     fn cubic_bspline_partitions_unity() {
         for i in 0..1000 {
             let x = -2.0 + i as f64 / 137.0;
-            let sum: f64 = (-4..=5).map(|k| CubicBSpline::value(x - k as f64)).sum();
+            let sum: f64 = (-4..=5)
+                .map(|k| CubicBSpline::value(x - k as f64))
+                .sum();
             assert!((sum - 1.0).abs() < 1e-12, "x={x}, sum={sum}");
         }
     }
