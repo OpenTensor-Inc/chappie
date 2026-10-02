@@ -14,7 +14,7 @@ impl CubicBSpline {
             return 0.0;
         }
         let mut sum = 0.0;
-        for (shift, coefficient) in [(0.0, 1.0), (1.0, -4.0), (2.0, 6.0), (3.0, -4.0), (4.0, 1.0)] {
+        for (shift, coefficient) in [(0.0, 1.0), (1.0, 0.0 - 4.0), (2.0, 6.0), (3.0, 0.0 - 4.0), (4.0, 1.0)] {
             let t = x - shift;
             if t > 0.0 {
                 sum += coefficient * t * t * t;
@@ -39,8 +39,8 @@ impl CubicBSplineWavelet {
     pub const SUPPORT_END: f64 = 7.0;
 
     const MASK: [f64; 11] = [
-        1.0, -124.0, 1677.0, -7904.0, 18482.0, -24264.0,
-        18482.0, -7904.0, 1677.0, -124.0, 1.0,
+        1.0, 0.0 - 124.0, 1677.0, 0.0 - 7904.0, 18482.0, 0.0 - 24264.0,
+        18482.0, 0.0 - 7904.0, 1677.0, 0.0 - 124.0, 1.0,
     ];
 
     #[inline]
