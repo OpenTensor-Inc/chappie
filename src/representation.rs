@@ -104,9 +104,7 @@ impl ContinuousObject {
         assert!(threshold >= 0.0 && threshold.is_finite());
 
         for level in &mut self.details {
-            level
-                .coefficients
-                .retain(|c| c.value.abs() >= threshold);
+            level.coefficients.retain(|c| c.value.abs() >= threshold);
         }
         self.details.retain(|level| !level.coefficients.is_empty());
     }
