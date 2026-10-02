@@ -13,6 +13,4 @@ pub mod basis;
 pub mod representation;
 
 pub use basis::{CubicBSpline, CubicBSplineWavelet};
-pub use representation::{
-    ContinuousObject, DyadicCoordinate, RefinementLevel, SparseCoefficient,
-};
+pub use representation::{ContinuousObject, DyadicCoordinate, RefinementLevel, SparseCoefficient};
