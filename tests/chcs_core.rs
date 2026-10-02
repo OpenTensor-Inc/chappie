@@ -13,7 +13,9 @@ fn cubic_basis_is_finite() {
 fn cubic_bspline_partitions_unity() {
     for i in 0..200 {
         let x = -2.0 + i as f64 / 37.0;
-        let sum: f64 = (-4..=5).map(|k| CubicBSpline::value(x - k as f64)).sum();
+        let sum: f64 = (-4..=5)
+            .map(|k| CubicBSpline::value(x - k as f64))
+            .sum();
         assert!((sum - 1.0).abs() < 1e-12);
     }
 }
