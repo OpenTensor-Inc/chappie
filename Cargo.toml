@@ -3,8 +3,12 @@ name = "chappie"
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-only"
-description = "A command-line tool for interacting with the Chappie AI model."
+description = "Mathematical manifold kernel for Chappie."
 repository = "https://github.com/OpenTensor-Inc/chappie"
+
+[lib]
+name = "chappie"
+path = "src/lib.rs"
 
 [[bin]]
 name = "chappie"
